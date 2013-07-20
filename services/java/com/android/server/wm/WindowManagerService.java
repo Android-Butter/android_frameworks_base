@@ -43,7 +43,6 @@ import static android.view.WindowManager.LayoutParams.TYPE_WALLPAPER;
 import com.android.internal.app.IBatteryStats;
 import com.android.internal.app.ThemeUtils;
 
-import com.android.internal.os.IDeviceHandler;
 import com.android.internal.policy.PolicyManager;
 import com.android.internal.policy.impl.PhoneWindowManager;
 import com.android.internal.view.IInputContext;
@@ -301,7 +300,6 @@ public class WindowManagerService extends IWindowManager.Stub
 
     private static final float THUMBNAIL_ANIMATION_DECELERATE_FACTOR = 1.5f;
 
-
     private BroadcastReceiver mThemeChangeReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             mUiContext = null;
@@ -331,7 +329,7 @@ public class WindowManagerService extends IWindowManager.Stub
 
     final boolean mLimitedAlphaCompositing;
 
-    final WindowManagerPolicy mPolicy;
+    final WindowManagerPolicy mPolicy = PolicyManager.makeNewWindowManager();
 
     final IActivityManager mActivityManager;
 
@@ -770,7 +768,7 @@ public class WindowManagerService extends IWindowManager.Stub
 
     public static WindowManagerService main(final Context context,
             final PowerManagerService pm, final DisplayManagerService dm,
-            final InputManagerService im, final IDeviceHandler device,
+            final InputManagerService im,
             final Handler uiHandler, final Handler wmHandler,
             final boolean haveInputMethods, final boolean showBootMsgs,
             final boolean onlyCore) {
@@ -779,7 +777,7 @@ public class WindowManagerService extends IWindowManager.Stub
             @Override
             public void run() {
                 holder[0] = new WindowManagerService(context, pm, dm, im,
-                        device, uiHandler, haveInputMethods, showBootMsgs, onlyCore);
+                        uiHandler, haveInputMethods, showBootMsgs, onlyCore);
             }
         }, 0);
         return holder[0];
@@ -801,7 +799,7 @@ public class WindowManagerService extends IWindowManager.Stub
 
     private WindowManagerService(Context context, PowerManagerService pm,
             DisplayManagerService displayManager, InputManagerService inputManager,
-            IDeviceHandler device, Handler uiHandler,
+            Handler uiHandler,
             boolean haveInputMethods, boolean showBootMsgs, boolean onlyCore) {
         mContext = context;
         mHaveInputMethods = haveInputMethods;
@@ -811,7 +809,6 @@ public class WindowManagerService extends IWindowManager.Stub
                 com.android.internal.R.bool.config_sf_limitedAlpha);
         mDisplayManagerService = displayManager;
         mHeadless = displayManager.isHeadless();
-        mPolicy = PolicyManager.makeNewWindowManager(device);
 
         mDisplayManager = (DisplayManager)context.getSystemService(Context.DISPLAY_SERVICE);
         mDisplayManager.registerDisplayListener(this, null);
@@ -1540,7 +1537,11 @@ public class WindowManagerService extends IWindowManager.Stub
                     pos++;
                 }
                 if (pos >= N) {
-                    // All is good!
+                    // Z order is good.
+                    // The IM target window may be changed, so update the mTargetAppToken.
+                    if (imWin != null) {
+                        imWin.mTargetAppToken = mInputMethodTarget.mAppToken;
+                    }
                     return false;
                 }
             }
@@ -1620,9 +1621,8 @@ public class WindowManagerService extends IWindowManager.Stub
         boolean targetChanged = false;
 
         // TODO(multidisplay): Wallpapers on main screen only.
-        final DisplayInfo displayInfo = getDefaultDisplayContentLocked().getDisplayInfo();
-        final int dw = displayInfo.appWidth;
-        final int dh = displayInfo.appHeight;
+        final int dw = mPolicy.getWallpaperWidth(mRotation);
+        final int dh = mPolicy.getWallpaperHeight(mRotation);
 
         // First find top-most window that has asked to be on top of the
         // wallpaper; all wallpapers go behind it.
@@ -1879,7 +1879,6 @@ public class WindowManagerService extends IWindowManager.Stub
             while (curWallpaperIndex > 0) {
                 curWallpaperIndex--;
                 WindowState wallpaper = token.windows.get(curWallpaperIndex);
-
                 if (visible) {
                     updateWallpaperOffsetLocked(wallpaper, dw, dh, false);
                 }
@@ -2043,10 +2042,8 @@ public class WindowManagerService extends IWindowManager.Stub
     }
 
     void updateWallpaperOffsetLocked(WindowState changingTarget, boolean sync) {
-        final DisplayContent displayContent = changingTarget.mDisplayContent;
-        final DisplayInfo displayInfo = displayContent.getDisplayInfo();
-        final int dw = displayInfo.appWidth;
-        final int dh = displayInfo.appHeight;
+        final int dw = mPolicy.getWallpaperWidth(mRotation);
+        final int dh = mPolicy.getWallpaperHeight(mRotation);
 
         WindowState target = mWallpaperTarget;
         if (target != null) {
@@ -5445,6 +5442,11 @@ public class WindowManagerService extends IWindowManager.Stub
                 mAnimatorDurationScale };
     }
 
+    @Override
+    public void reboot(String reason) {
+        ShutdownThread.reboot(getUiContext(), reason, false);
+    }
+
     // Called by window manager policy. Not exposed externally.
     @Override
     public int getLidState() {
@@ -5482,6 +5484,12 @@ public class WindowManagerService extends IWindowManager.Stub
 
     // Called by window manager policy.  Not exposed externally.
     @Override
+    public void rebootTile() {
+        ShutdownThread.reboot(mContext, null, true);
+    }
+
+    // Called by window manager policy. Not exposed externally.
+    @Override
     public void rebootSafeMode(boolean confirm) {
         ShutdownThread.rebootSafeMode(getUiContext(), confirm);
     }
@@ -5491,12 +5499,6 @@ public class WindowManagerService extends IWindowManager.Stub
             throw new SecurityException("Requires FILTER_EVENTS permission");
         }
         mInputManager.setInputFilter(filter);
-    }
-
-    // Called by window manager policy.  Not exposed externally.
-    @Override
-    public void reboot() {
-        ShutdownThread.reboot(getUiContext(), null, true);
     }
 
     public void setCurrentUser(final int newUserId) {
@@ -5914,9 +5916,6 @@ public class WindowManagerService extends IWindowManager.Stub
 
             // The screenshot API does not apply the current screen rotation.
             rot = getDefaultDisplayContentLocked().getDisplay().getRotation();
-            // Allow for abnormal hardware orientation
-            rot = (rot + (android.os.SystemProperties.getInt("ro.sf.hwrotation",0) / 90 )) % 4;
-
             int fw = frame.width();
             int fh = frame.height();
 
@@ -6925,101 +6924,67 @@ public class WindowManagerService extends IWindowManager.Stub
         return sw;
     }
 
-    private static class ApplicationDisplayMetrics {
-        boolean rotated;
-        int dh;
-        int dw;
-        int appWidth;
-        int appHeight;
-    }
+    boolean computeScreenConfigurationLocked(Configuration config) {
+        if (!mDisplayReady) {
+            return false;
+        }
 
-    private ApplicationDisplayMetrics calculateDisplayMetrics(DisplayContent displayContent) {
-        ApplicationDisplayMetrics dm = new ApplicationDisplayMetrics();
+        // TODO(multidisplay): For now, apply Configuration to main screen only.
+        final DisplayContent displayContent = getDefaultDisplayContentLocked();
 
-        dm.rotated = (mRotation == Surface.ROTATION_90 || mRotation == Surface.ROTATION_270);
-        final int realdw = dm.rotated ?
+        // Use the effective "visual" dimensions based on current rotation
+        final boolean rotated = (mRotation == Surface.ROTATION_90
+                || mRotation == Surface.ROTATION_270);
+        final int realdw = rotated ?
                 displayContent.mBaseDisplayHeight : displayContent.mBaseDisplayWidth;
-        final int realdh = dm.rotated ?
+        final int realdh = rotated ?
                 displayContent.mBaseDisplayWidth : displayContent.mBaseDisplayHeight;
-
-        dm.dw = realdw;
-        dm.dh = realdh;
+        int dw = realdw;
+        int dh = realdh;
 
         if (mAltOrientation) {
             if (realdw > realdh) {
                 // Turn landscape into portrait.
                 int maxw = (int)(realdh/1.3f);
                 if (maxw < realdw) {
-                    dm.dw = maxw;
+                    dw = maxw;
                 }
             } else {
                 // Turn portrait into landscape.
                 int maxh = (int)(realdw/1.3f);
                 if (maxh < realdh) {
-                    dm.dh = maxh;
+                    dh = maxh;
                 }
             }
         }
-
-        return dm;
-    }
-
-    private ApplicationDisplayMetrics updateApplicationDisplayMetricsLocked(
-            DisplayContent displayContent) {
-        if (!mDisplayReady) {
-            return null;
-        }
-
-        final ApplicationDisplayMetrics m = calculateDisplayMetrics(displayContent);
-        final DisplayInfo displayInfo = displayContent.getDisplayInfo();
-
-        m.appWidth = mPolicy.getNonDecorDisplayWidth(m.dw, m.dh, mRotation);
-        m.appHeight = mPolicy.getNonDecorDisplayHeight(m.dw, m.dh, mRotation);
-
-        synchronized(displayContent.mDisplaySizeLock) {
-            displayInfo.rotation = mRotation;
-            displayInfo.logicalWidth = m.dw;
-            displayInfo.logicalHeight = m.dh;
-            displayInfo.logicalDensityDpi = displayContent.mBaseDisplayDensity;
-            displayInfo.appWidth = m.appWidth;
-            displayInfo.appHeight = m.appHeight;
-            displayInfo.getLogicalMetrics(mRealDisplayMetrics, null);
-            displayInfo.getAppMetrics(mDisplayMetrics, null);
-            mDisplayManagerService.setDisplayInfoOverrideFromWindowManager(
-                    displayContent.getDisplayId(), displayInfo);
-
-            mAnimator.setDisplayDimensions(m.dw, m.dh, m.appWidth, m.appHeight);
-        }
-
-        if (false) {
-            Slog.i(TAG, "Set app display size: " + m.appWidth + " x " + m.appHeight);
-        }
-
-        return m;
-    }
-
-    boolean computeScreenConfigurationLocked(Configuration config) {
-        // TODO(multidisplay): For now, apply Configuration to main screen only.
-        final DisplayContent displayContent = getDefaultDisplayContentLocked();
-
-        // Update application display metrics.
-        final ApplicationDisplayMetrics appDm = updateApplicationDisplayMetricsLocked(
-                displayContent);
-
-        if (appDm == null) {
-            return false;
-        }
-
-        final boolean rotated = appDm.rotated;
-        final int dw = appDm.dw;
-        final int dh = appDm.dh;
 
         if (config != null) {
             config.orientation = (dw <= dh) ? Configuration.ORIENTATION_PORTRAIT :
                     Configuration.ORIENTATION_LANDSCAPE;
         }
 
+        // Update application display metrics.
+        final int appWidth = mPolicy.getNonDecorDisplayWidth(dw, dh, mRotation);
+        final int appHeight = mPolicy.getNonDecorDisplayHeight(dw, dh, mRotation);
         final DisplayInfo displayInfo = displayContent.getDisplayInfo();
+        synchronized(displayContent.mDisplaySizeLock) {
+            displayInfo.rotation = mRotation;
+            displayInfo.logicalWidth = dw;
+            displayInfo.logicalHeight = dh;
+            displayInfo.logicalDensityDpi = displayContent.mBaseDisplayDensity;
+            displayInfo.appWidth = appWidth;
+            displayInfo.appHeight = appHeight;
+            displayInfo.getLogicalMetrics(mRealDisplayMetrics, null);
+            displayInfo.getAppMetrics(mDisplayMetrics, null);
+            mDisplayManagerService.setDisplayInfoOverrideFromWindowManager(
+                    displayContent.getDisplayId(), displayInfo);
+
+            mAnimator.setDisplayDimensions(dw, dh, appWidth, appHeight);
+        }
+        if (false) {
+            Slog.i(TAG, "Set app display size: " + appWidth + " x " + appHeight);
+        }
+
         final DisplayMetrics dm = mDisplayMetrics;
         mCompatibleScreenScale = CompatibilityInfo.computeCompatibleScaling(dm,
                 mCompatDisplayMetrics);
@@ -10484,11 +10449,6 @@ public class WindowManagerService extends IWindowManager.Stub
         return mPolicy.hasNavigationBar();
     }
 
-    @Override
-    public boolean hasMenuKeyEnabled() {
-        return mPolicy.hasMenuKeyEnabled();
-    }
-
     public void lockNow(Bundle options) {
         mPolicy.lockNow(options);
     }
@@ -10504,31 +10464,6 @@ public class WindowManagerService extends IWindowManager.Stub
             return;
         }
         mPolicy.showAssistant();
-    }
-
-    public void updateDisplayMetrics() {
-        long origId = Binder.clearCallingIdentity();
-        boolean changed = false;
-
-        synchronized (mWindowMap) {
-            final DisplayContent displayContent = getDefaultDisplayContentLocked();
-            final DisplayInfo displayInfo =
-                    displayContent != null ? displayContent.getDisplayInfo() : null;
-            final int oldWidth = displayInfo != null ? displayInfo.appWidth : -1;
-            final int oldHeight = displayInfo != null ? displayInfo.appHeight : -1;
-            final ApplicationDisplayMetrics metrics =
-                    updateApplicationDisplayMetricsLocked(displayContent);
-
-            if (metrics != null && oldWidth >= 0 && oldHeight >= 0) {
-                changed = oldWidth != metrics.appWidth || oldHeight != metrics.appHeight;
-            }
-        }
-
-        if (changed) {
-            mH.sendEmptyMessage(H.SEND_NEW_CONFIGURATION);
-        }
-
-        Binder.restoreCallingIdentity(origId);
     }
 
     void dumpPolicyLocked(PrintWriter pw, String[] args, boolean dumpAll) {

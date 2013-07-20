@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
- * Copyright (C) 2012 The CyanogenMod Project (Calendar)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +26,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.gesture.Gesture;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
@@ -35,13 +35,10 @@ import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.os.storage.IMountService;
-import android.provider.CalendarContract;
 import android.provider.Settings;
 import android.security.KeyStore;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.text.format.DateFormat;
-import android.text.format.Time;
 import android.util.Log;
 import android.view.IWindowManager;
 import android.view.View;
@@ -54,10 +51,7 @@ import com.google.android.collect.Lists;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 /**
  * Utilities for the lock pattern and its settings.
@@ -142,6 +136,7 @@ public class LockPatternUtils {
     protected final static String LOCKOUT_PERMANENT_KEY = "lockscreen.lockedoutpermanently";
     protected final static String LOCKOUT_ATTEMPT_DEADLINE = "lockscreen.lockoutattemptdeadline";
     protected final static String PATTERN_EVER_CHOSEN_KEY = "lockscreen.patterneverchosen";
+    protected final static String GESTURE_EVER_CHOSEN_KEY = "lockscreen.gestureeverchosen";
     public final static String PASSWORD_TYPE_KEY = "lockscreen.password_type";
     public static final String PASSWORD_TYPE_ALTERNATE_KEY = "lockscreen.password_type_alternate";
     protected final static String LOCK_PASSWORD_SALT_KEY = "lockscreen.password_salt";
@@ -308,6 +303,24 @@ public class LockPatternUtils {
     }
 
     /**
+     * Check to see if a gesture matches the saved gesture.  If no gesture exists,
+     * always returns true.
+     * @param gesture The gesture to check.
+     * @return Whether the gesture matches the stored one.
+     */
+    public boolean checkGesture(Gesture gesture) {
+        final int userId = getCurrentOrCallingUserId();
+        try {
+            final boolean matched = getLockSettings().checkGesture(gesture, userId);
+            if (matched && (userId == UserHandle.USER_OWNER)) {
+            }
+            return matched;
+        } catch (RemoteException re) {
+            return true;
+        }
+    }
+
+    /**
      * Check to see if a password matches the saved password.  If no password exists,
      * always returns true.
      * @param password The password to check.
@@ -367,6 +380,18 @@ public class LockPatternUtils {
     }
 
     /**
+     * Check to see if the user has stored a lock gesture.
+     * @return Whether a saved gesture exists.
+     */
+    public boolean savedGestureExists() {
+        try {
+            return getLockSettings().haveGesture(getCurrentOrCallingUserId());
+        } catch (RemoteException re) {
+            return false;
+        }
+    }
+
+    /**
      * Check to see if the user has stored a lock pattern.
      * @return Whether a saved pattern exists.
      */
@@ -386,6 +411,16 @@ public class LockPatternUtils {
      */
     public boolean isPatternEverChosen() {
         return getBoolean(PATTERN_EVER_CHOSEN_KEY, false);
+    }
+
+    /**
+     * Return true if the user has ever chosen a gesture.  This is true even if the gesture is
+     * currently cleared.
+     *
+     * @return True if the user has ever chosen a pattern.
+     */
+    public boolean isGestureEverChosen() {
+        return getBoolean(GESTURE_EVER_CHOSEN_KEY, false);
     }
 
     /**
@@ -439,6 +474,11 @@ public class LockPatternUtils {
                     activePasswordQuality = DevicePolicyManager.PASSWORD_QUALITY_COMPLEX;
                 }
                 break;
+            case DevicePolicyManager.PASSWORD_QUALITY_GESTURE_WEAK:
+                if (isLockGestureEnabled()) {
+                    activePasswordQuality = DevicePolicyManager.PASSWORD_QUALITY_GESTURE_WEAK;
+                }
+                break;
         }
 
         return activePasswordQuality;
@@ -452,6 +492,8 @@ public class LockPatternUtils {
         saveLockPassword(null, DevicePolicyManager.PASSWORD_QUALITY_SOMETHING);
         setLockPatternEnabled(false);
         saveLockPattern(null);
+        saveLockGesture(null);
+        setLockGestureEnabled(false);
         setLong(PASSWORD_TYPE_KEY, DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED);
         setLong(PASSWORD_TYPE_ALTERNATE_KEY, DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED);
     }
@@ -541,6 +583,51 @@ public class LockPatternUtils {
             }
         } catch (RemoteException re) {
             Log.e(TAG, "Couldn't save lock pattern " + re);
+        }
+    }
+
+    /**
+     * Save a lock pattern.
+     * @param pattern The new pattern to save.
+     */
+    public void saveLockGesture(Gesture gesture) {
+        this.saveLockGesture(gesture, false);
+    }
+
+    /**
+     * Save a lock pattern.
+     * @param pattern The new pattern to save.
+     * @param isFallback Specifies if this is a fallback to biometric weak
+     */
+    public void saveLockGesture(Gesture gesture, boolean isFallback) {
+        try {
+            getLockSettings().setLockGesture(gesture, getCurrentOrCallingUserId());
+            DevicePolicyManager dpm = getDevicePolicyManager();
+            KeyStore keyStore = KeyStore.getInstance();
+            if (gesture != null) {
+                setBoolean(GESTURE_EVER_CHOSEN_KEY, true);
+                if (!isFallback) {
+                    deleteGallery();
+                    setLong(PASSWORD_TYPE_KEY, DevicePolicyManager.PASSWORD_QUALITY_GESTURE_WEAK);
+                    dpm.setActivePasswordState(DevicePolicyManager.PASSWORD_QUALITY_GESTURE_WEAK,
+                            0, 0, 0, 0, 0, 0, 0, getCurrentOrCallingUserId());
+                } else {
+                    setLong(PASSWORD_TYPE_KEY, DevicePolicyManager.PASSWORD_QUALITY_BIOMETRIC_WEAK);
+                    setLong(PASSWORD_TYPE_ALTERNATE_KEY,
+                            DevicePolicyManager.PASSWORD_QUALITY_GESTURE_WEAK);
+                    finishBiometricWeak();
+                    dpm.setActivePasswordState(DevicePolicyManager.PASSWORD_QUALITY_BIOMETRIC_WEAK,
+                            0, 0, 0, 0, 0, 0, 0, getCurrentOrCallingUserId());
+                }
+            } else {
+                if (keyStore.isEmpty()) {
+                    keyStore.reset();
+                }
+                dpm.setActivePasswordState(DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED, 0, 0,
+                        0, 0, 0, 0, 0, getCurrentOrCallingUserId());
+            }
+        } catch (RemoteException re) {
+            Log.e(TAG, "Couldn't save lock gesture " + re);
         }
     }
 
@@ -898,6 +985,20 @@ public class LockPatternUtils {
     }
 
     /**
+     * @return Whether the lock gesture is enabled, or if it is set as a backup for biometric weak
+     */
+    public boolean isLockGestureEnabled() {
+        final boolean backupEnabled =
+                getLong(PASSWORD_TYPE_ALTERNATE_KEY, DevicePolicyManager.PASSWORD_QUALITY_GESTURE_WEAK)
+                == DevicePolicyManager.PASSWORD_QUALITY_GESTURE_WEAK;
+
+        return getBoolean(Settings.Secure.LOCK_GESTURE_ENABLED, false)
+                && (getLong(PASSWORD_TYPE_KEY, DevicePolicyManager.PASSWORD_QUALITY_GESTURE_WEAK)
+                        == DevicePolicyManager.PASSWORD_QUALITY_GESTURE_WEAK ||
+                        (usingBiometricWeak() && backupEnabled));
+    }
+
+    /**
      * @return Whether biometric weak lock is installed and that the front facing camera exists
      */
     public boolean isBiometricWeakInstalled() {
@@ -1004,6 +1105,27 @@ public class LockPatternUtils {
 
     public boolean isShowErrorPath() {
         return getBoolean(Settings.Secure.LOCK_SHOW_ERROR_PATH, true);
+    }
+
+    /**
+     * Set whether the lock gesture is enabled.
+     */
+    public void setLockGestureEnabled(boolean enabled) {
+        setBoolean(Settings.Secure.LOCK_GESTURE_ENABLED, enabled);
+    }
+
+    /**
+     * @return Whether the visible gesture is enabled.
+     */
+    public boolean isVisibleGestureEnabled() {
+        return getBoolean(Settings.Secure.LOCK_GESTURE_VISIBLE, true);
+    }
+
+    /**
+     * Set whether the visible gesture is enabled.
+     */
+    public void setVisibleGestureEnabled(boolean enabled) {
+        setBoolean(Settings.Secure.LOCK_GESTURE_VISIBLE, enabled);
     }
 
     /**
@@ -1275,12 +1397,14 @@ public class LockPatternUtils {
     public boolean isSecure() {
         long mode = getKeyguardStoredPasswordQuality();
         final boolean isPattern = mode == DevicePolicyManager.PASSWORD_QUALITY_SOMETHING;
+        final boolean isGesture = mode == DevicePolicyManager.PASSWORD_QUALITY_GESTURE_WEAK;
         final boolean isPassword = mode == DevicePolicyManager.PASSWORD_QUALITY_NUMERIC
                 || mode == DevicePolicyManager.PASSWORD_QUALITY_ALPHABETIC
                 || mode == DevicePolicyManager.PASSWORD_QUALITY_ALPHANUMERIC
                 || mode == DevicePolicyManager.PASSWORD_QUALITY_COMPLEX;
         final boolean isProfileSecure = mProfileManager.getActiveProfile().getScreenLockModeWithDPM(mContext) == Profile.LockMode.DEFAULT;
         final boolean secure = (isPattern && isLockPatternEnabled() && savedPatternExists()
+                || isGesture && isLockGestureEnabled() && savedGestureExists()
                 || isPassword && savedPasswordExists()) && isProfileSecure;
         return secure;
     }
@@ -1387,15 +1511,6 @@ public class LockPatternUtils {
             // Shouldn't happen!
         }
         return false;
-    }
-
-    /**
-     * @hide
-     * Set the lock-before-unlock option (show widgets before the secure
-     * unlock screen). See config_enableLockBeforeUnlockScreen
-     */
-    public void setLockBeforeUnlock(boolean enabled) {
-        setBoolean(Settings.Secure.LOCK_BEFORE_UNLOCK, enabled);
     }
 
 }

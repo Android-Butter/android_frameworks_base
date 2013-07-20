@@ -428,17 +428,14 @@ final class ApplicationPackageManager extends PackageManager {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<PackageInfo> getInstalledThemePackages() {
-        // Returns a list of theme APKs.
-        ArrayList<PackageInfo> finalList = new ArrayList<PackageInfo>();
-        List<PackageInfo> installedPackagesList = getInstalledPackages(0);
-        for (PackageInfo pi : installedPackagesList) {
-            if (pi != null && pi.isThemeApk) {
-                finalList.add(pi);
-            }
+        try {
+            return mPM.getInstalledThemePackages();
+        } catch (RemoteException e) {
+            throw new RuntimeException("Package manager has died", e);
         }
-        return finalList;
     }
 
     @SuppressWarnings("unchecked")
@@ -1295,6 +1292,25 @@ final class ApplicationPackageManager extends PackageManager {
             // Should never happen!
         }
         return PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;
+    }
+
+    @Override
+    public String[] getRevokedPermissions(String packageName) {
+        try {
+            return mPM.getRevokedPermissions(packageName);
+        } catch (RemoteException e) {
+            // Should never happen!
+        }
+        return new String[0];
+    }
+
+    @Override
+    public void setRevokedPermissions(String packageName, String[] perms) {
+        try {
+            mPM.setRevokedPermissions(packageName, perms);
+        } catch (RemoteException e) {
+            // Should never happen!
+        }
     }
 
     @Override

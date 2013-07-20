@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
+ * This code has been modified.  Portions copyright (C) 2012, ParanoidAndroid Project.
  * This code has been modified.  Portions copyright (C) 2010, T-Mobile USA, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,13 +18,6 @@
 
 package android.app;
 
-import com.android.internal.app.IAssetRedirectionManager;
-import com.android.internal.os.BinderInternal;
-import com.android.internal.os.RuntimeInit;
-import com.android.internal.os.SamplingProfilerIntegration;
-
-import org.apache.harmony.xnet.provider.jsse.OpenSSLSocketImpl;
-
 import android.app.backup.BackupAgent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentCallbacks2;
@@ -32,10 +26,11 @@ import android.content.ContentProvider;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.IContentProvider;
-import android.content.IIntentReceiver;
 import android.content.Intent;
+import android.content.IIntentReceiver;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.IPackageManager;
 import android.content.pm.InstrumentationInfo;
 import android.content.pm.PackageInfo;
@@ -79,12 +74,15 @@ import android.os.ServiceManager;
 import android.os.StrictMode;
 import android.os.SystemClock;
 import android.os.SystemProperties;
+import android.text.TextUtils;
 import android.os.Trace;
 import android.os.UserHandle;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.AndroidRuntimeException;
 import android.util.DisplayMetrics;
 import android.util.EventLog;
+import android.util.ExtendedPropertiesUtils;
 import android.util.Log;
 import android.util.LogPrinter;
 import android.util.PrintWriterPrinter;
@@ -102,7 +100,13 @@ import android.view.WindowManager;
 import android.view.WindowManagerGlobal;
 import android.renderscript.RenderScript;
 
+import com.android.internal.app.IAssetRedirectionManager;
+import com.android.internal.os.BinderInternal;
+import com.android.internal.os.RuntimeInit;
+import com.android.internal.os.SamplingProfilerIntegration;
 import com.android.internal.util.Objects;
+
+import org.apache.harmony.xnet.provider.jsse.OpenSSLSocketImpl;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -126,9 +130,6 @@ import libcore.io.EventLogger;
 import libcore.io.IoUtils;
 
 import dalvik.system.CloseGuard;
-import dalvik.system.VMRuntime;
-import android.os.SystemProperties;
-import java.lang.*;
 
 final class SuperNotCalledException extends AndroidRuntimeException {
     public SuperNotCalledException(String msg) {
@@ -1575,7 +1576,10 @@ public final class ActivityThread {
             if (mScale != peer.mScale) {
                 return false;
             }
-            return mIsThemeable == peer.mIsThemeable;
+            if (mIsThemeable != peer.mIsThemeable) {
+                return false;
+            }
+            return true;
         }
     }
 
@@ -1685,8 +1689,7 @@ public final class ActivityThread {
             CompatibilityInfo compInfo) {
         ResourcesKey key = new ResourcesKey(resDir,
                 displayId, overrideConfiguration,
-                compInfo.applicationScale,
-                compInfo.isThemeable);
+                compInfo.applicationScale, compInfo.isThemeable);
         Resources r;
         synchronized (mPackages) {
             // Resources is app scale dependent.
@@ -1712,13 +1715,27 @@ public final class ActivityThread {
         //}
 
         AssetManager assets = new AssetManager();
+        assets.overrideHook(resDir, ExtendedPropertiesUtils.OverrideMode.FullNameExclude);
         assets.setThemeSupport(compInfo.isThemeable);
         if (assets.addAssetPath(resDir) == 0) {
             return null;
         }
 
+        /* Attach theme information to the resulting AssetManager when appropriate. */
+        Configuration themeConfig = getConfiguration();
+        if (compInfo.isThemeable && themeConfig != null) {
+            if (themeConfig.customTheme == null) {
+                themeConfig.customTheme = CustomTheme.getBootTheme();
+            }
+
+            if (!TextUtils.isEmpty(themeConfig.customTheme.getThemePackageName())) {
+                attachThemeAssets(assets, themeConfig.customTheme);
+            }
+        }
+
         //Slog.i(TAG, "Resource: key=" + key + ", display metrics=" + metrics);
         DisplayMetrics dm = getDisplayMetricsLocked(displayId, null);
+        dm.overrideHook(assets, ExtendedPropertiesUtils.OverrideMode.ExtendedProperties);
         Configuration config;
         boolean isDefaultDisplay = (displayId == Display.DEFAULT_DISPLAY);
         if (!isDefaultDisplay || key.mOverrideConfiguration != null) {
@@ -1732,18 +1749,6 @@ public final class ActivityThread {
         } else {
             config = getConfiguration();
         }
-
-        /* Attach theme information to the resulting AssetManager when appropriate. */
-        if (compInfo.isThemeable && config != null) {
-            if (config.customTheme == null) {
-                config.customTheme = CustomTheme.getBootTheme();
-            }
-
-            if (!TextUtils.isEmpty(config.customTheme.getThemePackageName())) {
-                attachThemeAssets(assets, config.customTheme);
-            }
-        }
-
         r = new Resources(assets, dm, config, compInfo);
         if (false) {
             Slog.i(TAG, "Created app resources " + resDir + " " + r + ": "
@@ -1784,8 +1789,8 @@ public final class ActivityThread {
      *
      * @param assets
      * @param theme
-     * @return true if the AssetManager is now theme-aware; false otherwise.
-     *         This can fail, for example, if the theme package has been been
+     * @return true if the AssetManager is now theme-aware; false otherwise
+     *         this can fail, for example, if the theme package has been
      *         removed and the theme manager has yet to revert formally back to
      *         the framework default.
      */
@@ -2143,6 +2148,17 @@ public final class ActivityThread {
 
     public final Activity getActivity(IBinder token) {
         return mActivities.get(token).activity;
+    }
+
+    protected void performFinishFloating() {
+        synchronized (mPackages) {
+            for (ActivityClientRecord ar : mActivities.values()) {
+                Activity a = ar.activity;
+                if (a != null && !a.mFinished && a.getWindow() != null && a.getWindow().mIsFloatingWindow) {
+                    a.finish();
+                }
+            }
+        }
     }
 
     public final void sendActivityResult(
@@ -2857,6 +2873,7 @@ public final class ActivityThread {
                     deliverResults(r, r.pendingResults);
                     r.pendingResults = null;
                 }
+
                 r.activity.performResume();
 
                 EventLog.writeEvent(LOG_ON_RESUME_CALLED,
@@ -2866,12 +2883,7 @@ public final class ActivityThread {
                 r.stopped = false;
                 r.state = null;
             } catch (Exception e) {
-                if (!mInstrumentation.onException(r.activity, e)) {
-                    throw new RuntimeException(
-                        "Unable to resume activity "
-                        + r.intent.getComponent().toShortString()
-                        + ": " + e.toString(), e);
-                }
+                // Unable to resume activity
             }
         }
         return r;
@@ -3282,6 +3294,7 @@ public final class ActivityThread {
 
     private void updateVisibility(ActivityClientRecord r, boolean show) {
         View v = r.activity.mDecor;
+
         if (v != null) {
             if (show) {
                 if (!r.activity.mVisibleFromServer) {
@@ -3351,7 +3364,7 @@ public final class ActivityThread {
             Log.w(TAG, "handleWindowVisibility: no activity for token " + token);
             return;
         }
-        
+
         if (!show && !r.stopped) {
             performStopActivityInner(r, null, show, false);
         } else if (show && r.stopped) {
@@ -3988,10 +4001,6 @@ public final class ActivityThread {
             if (r != null) {
                 if (DEBUG_CONFIGURATION) Slog.v(TAG, "Changing resources "
                         + r + " config to: " + config);
-                int displayId = entry.getKey().mDisplayId;
-                boolean isDefaultDisplay = (displayId == Display.DEFAULT_DISPLAY);
-                DisplayMetrics dm = defaultDisplayMetrics;
-                Configuration overrideConfig = entry.getKey().mOverrideConfiguration;
                 boolean themeChanged = (changes & ActivityInfo.CONFIG_THEME_RESOURCE) != 0;
                 if (themeChanged) {
                     AssetManager am = r.getAssets();
@@ -4002,6 +4011,10 @@ public final class ActivityThread {
                         }
                     }
                 }
+                int displayId = entry.getKey().mDisplayId;
+                boolean isDefaultDisplay = (displayId == Display.DEFAULT_DISPLAY);
+                DisplayMetrics dm = defaultDisplayMetrics;
+                Configuration overrideConfig = entry.getKey().mOverrideConfiguration;
                 if (!isDefaultDisplay || overrideConfig != null) {
                     if (tmpConfig == null) {
                         tmpConfig = new Configuration();
@@ -4303,6 +4316,8 @@ public final class ActivityThread {
     private void handleBindApplication(AppBindData data) {
         mBoundApplication = data;
         mConfiguration = new Configuration(data.config);
+        mConfiguration.active = true;
+        mConfiguration.overrideHook(data.processName, ExtendedPropertiesUtils.OverrideMode.PackageName);
         mCompatConfiguration = new Configuration(data.config);
 
         mProfiler = new Profiler();
@@ -4312,36 +4327,6 @@ public final class ActivityThread {
 
         // send up app name; do this *before* waiting for debugger
         Process.setArgV0(data.processName);
-
-        String str  = SystemProperties.get("dalvik.vm.heaputilization", "" );
-        if( !str.equals("") ){
-            float heapUtil = Float.valueOf(str.trim()).floatValue();
-            VMRuntime.getRuntime().setTargetHeapUtilization(heapUtil);
-            Log.d(TAG, "setTargetHeapUtilization:" + str );
-        }
-        int heapMinFree  = SystemProperties.getInt("dalvik.vm.heapMinFree", 0 );
-        if( heapMinFree > 0 ){
-            VMRuntime.getRuntime().setTargetHeapMinFree(heapMinFree);
-            Log.d(TAG, "setTargetHeapMinFree:" + heapMinFree );
-        }
-        int heapConcurrentStart  = SystemProperties.getInt("dalvik.vm.heapconcurrentstart", 0 );
-        if( heapConcurrentStart > 0 ){
-            VMRuntime.getRuntime().setTargetHeapConcurrentStart(heapConcurrentStart);
-            Log.d(TAG, "setTargetHeapConcurrentStart:" + heapConcurrentStart );
-        }
-
-        ////
-        ////If want to set application specific GC paramters, can use
-        ////the following check
-        ////
-        //if( data.processName.equals("com.android.gallery3d")) {
-        //    VMRuntime.getRuntime().setTargetHeapUtilization(0.25f);
-        //    VMRuntime.getRuntime().setTargetHeapMinFree(12*1024*1024);
-        //    VMRuntime.getRuntime().setTargetHeapConcurrentStart(4*1024*1024);
-        //}
-
-
-
         android.ddm.DdmHandleAppName.setAppName(data.processName,
                                                 UserHandle.myUserId());
 
@@ -4678,6 +4663,8 @@ public final class ActivityThread {
                                 + "snatched provider from the jaws of death");
                     }
                     prc.removePending = false;
+                    // There is a race! It fails to remove the message, which
+                    // will be handled in completeRemoveProvider().
                     mH.removeMessages(H.REMOVE_PROVIDER, prc);
                 } else {
                     unstableDelta = 0;
@@ -4857,6 +4844,11 @@ public final class ActivityThread {
                 return;
             }
 
+            // More complicated race!! Some client managed to acquire the
+            // provider and release it before the removal was completed.
+            // Continue the removal, and abort the next remove message.
+            prc.removePending = false;
+
             final IBinder jBinder = prc.holder.provider.asBinder();
             ProviderRefCount existingPrc = mProviderRefCountMap.get(jBinder);
             if (existingPrc == prc) {
@@ -4871,17 +4863,17 @@ public final class ActivityThread {
                     iter.remove();
                 }
             }
-        }
 
-        try {
-            if (DEBUG_PROVIDER) {
-                Slog.v(TAG, "removeProvider: Invoking ActivityManagerNative."
-                        + "removeContentProvider(" + prc.holder.info.name + ")");
+            try {
+                if (DEBUG_PROVIDER) {
+                    Slog.v(TAG, "removeProvider: Invoking ActivityManagerNative."
+                            + "removeContentProvider(" + prc.holder.info.name + ")");
+                }
+                ActivityManagerNative.getDefault().removeContentProvider(
+                        prc.holder.connection, false);
+            } catch (RemoteException e) {
+                //do nothing content provider object is dead any way
             }
-            ActivityManagerNative.getDefault().removeContentProvider(
-                    prc.holder.connection, false);
-        } catch (RemoteException e) {
-            //do nothing content provider object is dead any way
         }
     }
 
@@ -5148,6 +5140,7 @@ public final class ActivityThread {
         HardwareRenderer.disable(true);
         ActivityThread thread = new ActivityThread();
         thread.attach(true);
+        ContextImpl.init(thread);
         return thread;
     }
 
@@ -5212,6 +5205,7 @@ public final class ActivityThread {
 
         ActivityThread thread = new ActivityThread();
         thread.attach(false);
+        ContextImpl.init(thread);
 
         if (sMainThreadHandler == null) {
             sMainThreadHandler = thread.getHandler();

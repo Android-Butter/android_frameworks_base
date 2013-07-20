@@ -68,7 +68,7 @@ LOCAL_SRC_FILES += \
 	core/java/android/app/IBackupAgent.aidl \
 	core/java/android/app/IInstrumentationWatcher.aidl \
 	core/java/android/app/INotificationManager.aidl \
-	core/java/android/app/IProfileManager.aidl \
+        core/java/android/app/IProfileManager.aidl \
 	core/java/android/app/IProcessObserver.aidl \
 	core/java/android/app/ISearchManager.aidl \
 	core/java/android/app/ISearchManagerCallback.aidl \
@@ -78,7 +78,7 @@ LOCAL_SRC_FILES += \
 	core/java/android/app/IThumbnailRetriever.aidl \
 	core/java/android/app/ITransientNotification.aidl \
 	core/java/android/app/IUiModeManager.aidl \
-    core/java/android/app/IUserSwitchObserver.aidl \
+	core/java/android/app/IUserSwitchObserver.aidl \
 	core/java/android/app/IWallpaperManager.aidl \
 	core/java/android/app/IWallpaperManagerCallback.aidl \
 	core/java/android/app/admin/IDevicePolicyManager.aidl \
@@ -145,9 +145,6 @@ LOCAL_SRC_FILES += \
 	core/java/android/os/IVibratorService.aidl \
 	core/java/android/service/dreams/IDreamManager.aidl \
 	core/java/android/service/dreams/IDreamService.aidl \
-	core/java/android/service/pie/IPieService.aidl \
-	core/java/android/service/pie/IPieActivationListener.aidl \
-	core/java/android/service/pie/IPieHostCallback.aidl \
 	core/java/android/service/wallpaper/IWallpaperConnection.aidl \
 	core/java/android/service/wallpaper/IWallpaperEngine.aidl \
 	core/java/android/service/wallpaper/IWallpaperService.aidl \
@@ -225,21 +222,8 @@ LOCAL_SRC_FILES += \
 	wifi/java/android/net/wifi/p2p/IWifiP2pManager.aidl \
 	voip/java/android/net/sip/ISipSession.aidl \
 	voip/java/android/net/sip/ISipSessionListener.aidl \
-	voip/java/android/net/sip/ISipService.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IFmReceiver.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IFmTransmitter.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnStateChangedListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnStartedListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnErrorListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnScanListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnForcedPauseListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnForcedResetListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnBlockScanListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnRDSDataFoundListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnSignalStrengthListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnStereoListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnExtraCommandListener.aidl \
-	fmradio/java/com/stericsson/hardware/fm/IOnAutomaticSwitchListener.aidl
+	voip/java/android/net/sip/ISipService.aidl 
+	
 #
 
 
@@ -286,8 +270,8 @@ aidl_files := \
 	frameworks/base/core/java/android/accounts/IAccountAuthenticator.aidl \
 	frameworks/base/core/java/android/accounts/IAccountAuthenticatorResponse.aidl \
 	frameworks/base/core/java/android/app/Notification.aidl \
-	frameworks/base/core/java/android/app/NotificationGroup.aidl \
-	frameworks/base/core/java/android/app/Profile.aidl \
+        frameworks/base/core/java/android/app/NotificationGroup.aidl \
+        frameworks/base/core/java/android/app/Profile.aidl \
 	frameworks/base/core/java/android/app/PendingIntent.aidl \
 	frameworks/base/core/java/android/bluetooth/BluetoothDevice.aidl \
 	frameworks/base/core/java/android/bluetooth/BluetoothHealthAppConfiguration.aidl \
@@ -725,6 +709,33 @@ include $(BUILD_DROIDDOC)
 
 # explicitly specify that ds depends on framework-res and any generated docs
 $(full_target): framework-res-package-target
+
+
+#==== reference docs for GCM =======================
+
+include $(CLEAR_VARS)
+#
+gcm_docs_src_files += \
+        $(call all-java-files-under, ../../vendor/unbundled_google/libs/gcm/gcm-client/src) \
+        $(call all-java-files-under, ../../vendor/unbundled_google/libs/gcm/gcm-server/src) \
+        $(call all-html-files-under, ../../vendor/unbundled_google/libs/gcm/gcm-client/src) \
+        $(call all-html-files-under, ../../vendor/unbundled_google/libs/gcm/gcm-server/src) \
+
+LOCAL_SRC_FILES := $(gcm_docs_src_files)
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE:= online-gcm-ref
+LOCAL_MODULE_CLASS := JAVA_LIBRARIES
+LOCAL_IS_HOST_MODULE := false
+
+LOCAL_DROIDDOC_CUSTOM_TEMPLATE_DIR := build/tools/droiddoc/templates-sdk
+
+LOCAL_DROIDDOC_OPTIONS := \
+        -toroot / \
+        -gcmref \
+        -hdf android.whichdoc online \
+        -hdf template.showLanguageMenu true
+
+include $(BUILD_DROIDDOC)
 
 # ==== docs that have all of the stuff that's @hidden =======================
 include $(CLEAR_VARS)

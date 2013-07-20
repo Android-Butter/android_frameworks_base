@@ -1149,6 +1149,8 @@
     <string name="date_picker_dialog_title" msgid="5879450659453782278">"Establecer fecha"</string>
     <string name="date_time_set" msgid="5777075614321087758">"Establecer"</string>
     <string name="date_time_done" msgid="2507683751759308828">"Listo"</string>
+    <string name="color_picker">Selector de color</string>
+    <string name="color_picker_hint">Presione en el color para aplicar</string>
     <string name="perms_new_perm_prefix" msgid="8257740710754301407"><font size="12" fgcolor="#ff33b5e5">"NUEVO:"</font></string>
     <string name="perms_description_app" msgid="5139836143293299417">"Proporcionado por <xliff:g id="APP_NAME">%1$s</xliff:g>"</string>
     <string name="no_permissions" msgid="7283357728219338112">"No es necesario ningún permiso"</string>
@@ -1456,4 +1458,35 @@
     <string name="enable_accessibility_canceled" msgid="3833923257966635673">"Accesibilidad cancelada"</string>
     <string name="user_switched" msgid="3768006783166984410">"Usuario actual: <xliff:g id="NAME">%1$s</xliff:g>"</string>
     <string name="owner_name" msgid="2716755460376028154">"Propietario"</string>
+    <string name="profileNameDefault">Predeterminado</string>
+    <string name="profileNameWork">Trabajo</string>
+    <string name="profileNameHome">Casa</string>
+    <string name="profileNameSilent">Silencio</string>
+    <string name="profileNameNight">Noche</string>
+    <string name="profileGroupPhone">Teléfono</string>
+    <string name="profileGroupCalendar">Calendario</string>
+    <string name="profileGroupGmail">Gmail</string>
+    <string name="profileGroupEmail">Email</string>
+    <string name="profileGroupSMS">SMS</string>
+    <string name="wildcardProfile">Otro</string>
+    <string name="reboot_system" product="tablet">Reiniciar tablet</string>
+    <string name="reboot_system" product="default">Reiniciar teléfono</string>
+    <string name="global_action_screenshot">Captura de pantalla</string>
+    <string name="global_actions_toggle_expanded_desktop_mode">Escritorio extendido</string>
+    <string name="global_actions_expanded_desktop_mode_on_status">Activado</string>
+    <string name="global_actions_expanded_desktop_mode_off_status">Desactivado</string>
+    <string name="reboot_reboot">Reiniciar</string>
+    <string name="reboot_recovery">Modo Recovery</string>
+    <string name="reboot_bootloader">Modo Bootloader</string>
+    <string name="reboot_bootmenu">Modo Bootmenu</string>
+    <string name="reboot_fastboot">Modo Fastboot</string>
+    <string name="reboot_download">Modo Download</string>
+    <string name="reboot_progress">Reiniciando\u2026</string>
+    <string name="reboot_confirm">El terminal se reiniciará</string>
+    <string name="permlab_preventpower">Anular tecla encendido</string>
+    <string name="permdesc_preventpower">Permite que una aplicación cambie el comportamiento de la tecla de encendido</string>
+    <string name="lockscreen_discharging">Descargando, <xliff:g id="number">%d</xliff:g><xliff:g id="percent">%%</xliff:g></string>
+    <string name="app_killed_message">Aplicación finalizada</string>
+    <string name="global_action_reboot">Reiniciar</string>
+    <string name="global_action_choose_profile">Perfil</string>
 </resources>

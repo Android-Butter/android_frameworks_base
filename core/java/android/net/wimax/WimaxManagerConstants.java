@@ -114,5 +114,6 @@ public class WimaxManagerConstants
      * Constants for HTC/SQN WiMAX implementation
      */
     public static final String WIMAX_ENABLED_CHANGED_ACTION = "com.htc.net.wimax.WIMAX_ENABLED_CHANGED";
-    public static final String CURRENT_WIMAX_ENABLED_STATE  = "curWimaxEnabledState";
+    public static final String CURRENT_WIMAX_ENABLED_STATE = "curWimaxEnabledState";
+
 }

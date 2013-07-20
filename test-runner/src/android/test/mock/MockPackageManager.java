@@ -597,6 +597,9 @@ public class MockPackageManager extends PackageManager {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @hide
+     */
     @Override
     public void verifyPendingInstall(int id, int verificationCode) {
         throw new UnsupportedOperationException();
@@ -613,6 +616,22 @@ public class MockPackageManager extends PackageManager {
      */
     @Override
     public VerifierDeviceIdentity getVerifierDeviceIdentity() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public String[] getRevokedPermissions(String packageName) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public void setRevokedPermissions(String packageName, String[] perms) {
         throw new UnsupportedOperationException();
     }
 }

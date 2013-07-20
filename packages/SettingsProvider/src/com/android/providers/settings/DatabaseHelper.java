@@ -806,12 +806,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         if (upgradeVersion == 58) {
             /* Add default for new Auto Time Zone */
-            int autoTimeValue = getIntValueFromSystem(db, Settings.System.AUTO_TIME, 0);
+            int autoTimeValue = getIntValueFromSystem(db, Settings.Global.AUTO_TIME, 0);
             db.beginTransaction();
             SQLiteStatement stmt = null;
             try {
                 stmt = db.compileStatement("INSERT INTO system(name,value)" + " VALUES(?,?);");
-                loadSetting(stmt, Settings.System.AUTO_TIME_ZONE,
+                loadSetting(stmt, Settings.Global.AUTO_TIME_ZONE,
                         autoTimeValue); // Sync timezone to NITZ if auto_time was enabled
                 db.setTransactionSuccessful();
             } finally {
@@ -1971,20 +1971,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
             loadIntegerSetting(stmt, Settings.System.POINTER_SPEED,
                     R.integer.def_pointer_speed);
-
-            loadIntegerSetting(stmt, Settings.System.STATUS_BAR_BATTERY,
-                    R.integer.def_battery_style);
-
-            loadIntegerSetting(stmt, Settings.System.STATUS_BAR_NOTIF_COUNT,
-                    R.integer.def_notif_count);
-
-            loadIntegerSetting(stmt, Settings.System.QS_QUICK_PULLDOWN,
-                    R.integer.def_qs_quick_pulldown);
-
-            loadStringSetting(stmt, Settings.System.LOCKSCREEN_TARGETS,
-                    R.string.def_lockscreen_targets);
-            loadIntegerSetting(stmt, Settings.System.UI_FORCE_OVERFLOW_BUTTON,
-                    R.integer.def_force_overflow_button);
         } finally {
             if (stmt != null) stmt.close();
         }
@@ -1997,6 +1983,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 R.bool.def_sound_effects_enabled);
         loadBooleanSetting(stmt, Settings.System.HAPTIC_FEEDBACK_ENABLED,
                 R.bool.def_haptic_feedback);
+        loadIntegerSetting(stmt, Settings.System.VOLUME_ADJUST_SOUNDS_ENABLED,
+            R.integer.def_volume_adjust_sounds_enabled);
         loadIntegerSetting(stmt, Settings.System.LOCKSCREEN_SOUNDS_ENABLED,
             R.integer.def_lockscreen_sounds_enabled);
     }
@@ -2230,7 +2218,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     R.string.def_car_undock_sound);
             loadStringSetting(stmt, Settings.Global.WIRELESS_CHARGING_STARTED_SOUND,
                     R.string.def_wireless_charging_started_sound);
-
+            loadIntegerSetting(stmt, Settings.Global.DOCK_AUDIO_MEDIA_ENABLED,
+                    R.integer.def_dock_audio_media_enabled);
             loadBooleanSetting(stmt, Settings.Global.POWER_NOTIFICATIONS_ENABLED,
                     R.bool.def_power_notifications_enabled);
             loadBooleanSetting(stmt, Settings.Global.POWER_NOTIFICATIONS_VIBRATE,

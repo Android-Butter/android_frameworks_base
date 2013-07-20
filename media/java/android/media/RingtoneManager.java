@@ -647,7 +647,6 @@ public class RingtoneManager {
     private static Ringtone getRingtone(final Context context, Uri ringtoneUri, int streamType) {
         ProfileManager pm = (ProfileManager)context.getSystemService(context.PROFILE_SERVICE);
         ProfileGroup profileGroup = pm.getActiveProfileGroup(context.getPackageName());
-
         try {
             Ringtone r = new Ringtone(context, true);
             if (streamType >= 0) {

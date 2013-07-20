@@ -22,9 +22,9 @@ import android.app.Activity;
 import android.app.ActivityManagerNative;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.app.SearchManager;
 import android.app.Profile;
 import android.app.ProfileManager;
-import android.app.SearchManager;
 import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
@@ -249,9 +249,8 @@ public class KeyguardViewMediator {
     private int mUnlockSoundId;
     private int mLockSoundStreamId;
 
-    private ProfileManager mProfileManager;
-
     private int mSlideLockDelay;
+    private ProfileManager mProfileManager;
 
     /**
      * The volume applied to the lock/unlock sounds.
@@ -696,28 +695,13 @@ public class KeyguardViewMediator {
     }
 
     private void maybeSendUserPresentBroadcast() {
-        if (mSystemReady && isKeyguardDisabled()) {
+        if (mSystemReady && mLockPatternUtils.isLockScreenDisabled()
+                && mUserManager.getUsers(true).size() == 1) {
+            // Lock screen is disabled because the user has set the preference to "None".
+            // In this case, send out ACTION_USER_PRESENT here instead of in
+            // handleKeyguardDone()
             sendUserPresentBroadcast();
         }
-    }
-
-    private boolean isKeyguardDisabled() {
-        if (!mExternallyEnabled) {
-            if (DEBUG) Log.d(TAG, "isKeyguardDisabled: keyguard is disabled externally");
-            return true;
-        }
-        if (mLockPatternUtils.isLockScreenDisabled() && mUserManager.getUsers(true).size() == 1) {
-            if (DEBUG) Log.d(TAG, "isKeyguardDisabled: keyguard is disabled by setting");
-            return true;
-        }
-        Profile profile = mProfileManager.getActiveProfile();
-        if (profile != null) {
-            if (profile.getScreenLockModeWithDPM(mContext) == Profile.LockMode.DISABLE) {
-                if (DEBUG) Log.d(TAG, "isKeyguardDisabled: keyguard is disabled by profile");
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -876,10 +860,11 @@ public class KeyguardViewMediator {
 
     /**
      * Given the state of the keyguard, is the input restricted?
-     * Input is restricted when the keyguard is showing or we haven't been provisioned yet.
+     * Input is restricted when the keyguard is showing, or when the keyguard
+     * was suppressed by an app that disabled the keyguard or we haven't been provisioned yet.
      */
     public boolean isInputRestricted() {
-        return mShowing || !mUpdateMonitor.isDeviceProvisioned();
+        return mShowing || mNeedToReshowWhenReenabled || !mUpdateMonitor.isDeviceProvisioned();
     }
 
     private void doKeyguardLocked() {
@@ -912,10 +897,36 @@ public class KeyguardViewMediator {
             return;
         }
 
-        // if we're disabled by an app or profile, don't show
-        if (!lockedOrMissing && isKeyguardDisabled()) {
-            if (DEBUG) Log.d(TAG, "doKeyguard: not showing because keyguard is disabled");
+        // if another app is disabling us, don't show
+        if (!mExternallyEnabled && !lockedOrMissing) {
+            if (DEBUG) Log.d(TAG, "doKeyguard: not showing because externally disabled");
+
+            // note: we *should* set mNeedToReshowWhenReenabled=true here, but that makes
+            // for an occasional ugly flicker in this situation:
+            // 1) receive a call with the screen on (no keyguard) or make a call
+            // 2) screen times out
+            // 3) user hits key to turn screen back on
+            // instead, we reenable the keyguard when we know the screen is off and the call
+            // ends (see the broadcast receiver below)
+            // TODO: clean this up when we have better support at the window manager level
+            // for apps that wish to be on top of the keyguard
             return;
+        }
+
+        if (mUserManager.getUsers(true).size() < 2
+                && mLockPatternUtils.isLockScreenDisabled() && !lockedOrMissing) {
+            if (DEBUG) Log.d(TAG, "doKeyguard: not showing because lockscreen is off");
+            return;
+        }
+
+        // if the current profile has disabled us, don't show
+        Profile profile = mProfileManager.getActiveProfile();
+        if (profile != null) {
+            if (!lockedOrMissing
+                    && profile.getScreenLockModeWithDPM(mContext) == Profile.LockMode.DISABLE) {
+                if (DEBUG) Log.d(TAG, "doKeyguard: not showing because of profile override");
+                return;
+            }
         }
 
         if (DEBUG) Log.d(TAG, "doKeyguard: showing the lock screen");

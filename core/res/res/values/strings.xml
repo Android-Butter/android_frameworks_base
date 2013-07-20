@@ -292,6 +292,14 @@
     <string name="screen_lock">Screen lock</string>
     <!-- Button to turn off the phone, within the Phone Options dialog -->
     <string name="power_off">Power off</string>
+
+    <!-- label for item that toggles expand desktop mode -->
+    <string name="global_actions_toggle_expanded_desktop_mode">Expanded desktop</string>
+    <!-- status message in phone options dialog for when expand desktop mode is on -->
+    <string name="global_actions_expanded_desktop_mode_on_status">Enabled</string>
+    <!-- status message in phone options dialog for when expand desktop mode is off -->
+    <string name="global_actions_expanded_desktop_mode_off_status">Disabled</string>
+
     <!-- Spoken description for ringer silent option. [CHAR LIMIT=NONE] -->
     <string name="silent_mode_silent">Ringer off</string>
     <!-- Spoken description for ringer vibrate option. [CHAR LIMIT=NONE] -->
@@ -374,6 +382,15 @@
 
     <!-- status message in phone options dialog for when airplane mode is off -->
     <string name="global_actions_airplane_mode_off_status">Airplane mode is OFF</string>
+
+    <!-- label for item that screenshots in phone options dialog -->
+    <string name="global_action_screenshot">Screenshot</string>
+
+    <!-- label for item that torches in phone options dialog -->
+    <string name="global_action_torch">Torch</string>
+
+    <!-- label for item that toggles NavBar Hide -->
+    <string name="global_actions_toggle_navbar_hide">Navigation and Status Bar Controls</string>
 
     <!-- Text to use when the number in a notification info is too large
          (greater than status_bar_notification_info_maxnum, defined in
@@ -536,6 +553,15 @@
     <string name="permgroupdesc_storage" product="default">Access the SD card.</string>
 
     <!--  Permissions -->
+
+    <!-- Superuser application permission, allows applications to call the superuser binary (su) -->
+    <string name="permlab_accessSuperuser">full permissions to all device features and storage</string>
+    <string name="permdesc_accessSuperuser">Superuser grants full access to all device features and storage, including the secure and sensitive hardware elements of your device. This permission is potentially dangerous.</string>
+
+    <!-- Title of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permlab_cancelNotifications">cancel application notifications</string>
+    <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permdesc_cancelNotifications">Allows the app to cancel notifications created by other apps.</string>
 
     <!-- Title of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
     <string name="permlab_statusBar">disable or modify status bar</string>
@@ -1023,6 +1049,11 @@
     <string name="permdesc_movePackage">Allows the app to move app resources from internal to external media and vice versa.</string>
 
     <!-- Title of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permlab_preventpower">prevent power key</string>
+    <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permdesc_preventpower">Allows an application to override the power key</string>
+
+    <!-- Title of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
     <string name="permlab_readLogs">read sensitive log data</string>
     <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
     <string name="permdesc_readLogs" product="tablet">Allows the app to read from the
@@ -1390,6 +1421,18 @@
     <string name="permlab_vibrate">control vibration</string>
     <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
     <string name="permdesc_vibrate">Allows the app to control the vibrator.</string>
+
+    <!-- Title of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permlab_fm_radio_receiver">control FM receiver</string>
+    <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permdesc_fm_radio_receiver">Allows the application to control
+        the FM receiver.</string>
+
+    <!-- Title of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permlab_fm_radio_transmitter">control FM transmitter</string>
+    <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permdesc_fm_radio_transmitter">Allows the application to control
+        the FM transmitter.</string>
 
     <!-- Title of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
     <string name="permlab_flashlight">control flashlight</string>
@@ -1769,6 +1812,11 @@
     <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
     <string name="permdesc_modifyNetworkAccounting">Allows the app to modify how network usage is accounted against apps. Not for use by normal apps.</string>
 
+    <!-- Title of an application permission that lets an application view/edit revoked permissions. -->
+    <string name="permlab_revokePermissions">Allows view and edit of revoked permissions. Not for use by normal applications.</string>
+    <!-- Description of an application permission that lets lets an application view/edit revoked permissions. -->
+    <string name="permdesc_revokePermissions">Allows read and write for revoked permissions. Not for use by normal applications.</string>
+
     <!-- Policy administration -->
 
     <!-- Title of policy access to limiting the user's password choices -->
@@ -1820,14 +1868,6 @@
     <string name="policylab_disableKeyguardFeatures">Disable features in keyguard</string>
     <!-- Description of policy access to disable all device cameras [CHAR LIMIT=110]-->
     <string name="policydesc_disableKeyguardFeatures">Prevent use of some features in keyguard.</string>
-    <!-- Title of policy access to start enforcing SELinux policy [CHAR LIMIT=30]-->
-    <string name="policylab_enforceSelinux">Enforce SELinux</string>
-    <!-- Description of policy access to start enforcing SELinux policy [CHAR LIMIT=110]-->
-    <string name="policydesc_enforceSelinux">Toggle SELinux policy enforcing or permissive mode.</string>
-    <!-- Title of policy access to start enforcing MMAC policy [CHAR LIMIT=30]-->
-    <string name="policylab_enforceMmac">Enforce MMAC</string>
-    <!-- Description of policy access to start enforcing MMAC policy [CHAR LIMIT=110]-->
-    <string name="policydesc_enforceMmac">Toggle MMAC policy enforcing or permissive mode.</string>
 
     <!-- The order of these is important, don't reorder without changing Contacts.java --> <skip />
     <!-- Phone number types from android.provider.Contacts. This could be used when adding a new phone number for a contact, for example. -->
@@ -2101,6 +2141,12 @@
     <string name="lockscreen_pattern_wrong">Try again</string>
     <!-- On the unlock password screen, shown when the user enters the wrong lock password and must try again. -->
     <string name="lockscreen_password_wrong">Try again</string>
+    <!-- On the unlock gesture screen, shown at the top of the unlock screen to tell the user what to do. Below this text is the place for the user to draw the gesture. -->
+    <string name="lockscreen_gesture_instructions">Draw gesture to unlock</string>
+    <!-- Shown to confirm that the user entered their lock gesture correctly. -->
+    <string name="lockscreen_gesture_correct">Correct!</string>
+    <!-- On the unlock gesture screen, shown when the user enters the wrong lock gesture and must try again. -->
+    <string name="lockscreen_gesture_wrong">Try again</string>
     <!-- Shown when face unlock failed multiple times so we're just using the backup -->
     <string name="faceunlock_multiple_failures">Maximum Face Unlock attempts exceeded</string>
 
@@ -2114,8 +2160,11 @@
     <string name="lockscreen_battery_short"><xliff:g id="number">%d</xliff:g><xliff:g id="percent">%%</xliff:g></string>
 
     <!-- When the lock screen is showing and the battery is low, warn user to plug
-         in the phone soon and show current percentage. -->
-    <string name="lockscreen_low_battery">Connect your charger, <xliff:g id="number">%d</xliff:g><xliff:g id="percent">%%</xliff:g></string>
+         in the phone soon. -->
+    <string name="lockscreen_low_battery">Connect your charger.</string>
+    <!-- Showing the Battery % while not plugged in. -->
+    <string name="lockscreen_always_battery">Discharging, <xliff:g id="number">%d</xliff:g><xliff:g id="percent">%%</xliff:g></string>
+    <string name="lockscreen_always_low_battery">Connect your charger, <xliff:g id="number">%d</xliff:g><xliff:g id="percent">%%</xliff:g></string>
 
     <!-- Shown in the lock screen when there is no SIM card. -->
     <string name="lockscreen_missing_sim_message_short">No SIM card</string>
@@ -2310,6 +2359,8 @@
     <string name="keyguard_accessibility_slide_unlock">Slide unlock.</string>
     <!-- Accessibility description of the pattern unlock. [CHAR_LIMIT=none] -->
     <string name="keyguard_accessibility_pattern_unlock">Pattern unlock.</string>
+    <!-- Accessibility description of the gesture unlock. [CHAR_LIMIT=none] -->
+    <string name="keyguard_accessibility_gesture_unlock">Gesture unlock.</string>
     <!-- Accessibility description of the face unlock. [CHAR_LIMIT=none] -->
     <string name="keyguard_accessibility_face_unlock">Face unlock.</string>
     <!-- Accessibility description of the pin lock. [CHAR_LIMIT=none] -->
@@ -2318,6 +2369,8 @@
     <string name="keyguard_accessibility_password_unlock">Password unlock.</string>
     <!-- Accessibility description of the unlock pattern area. [CHAR_LIMIT=none] -->
     <string name="keyguard_accessibility_pattern_area">Pattern area.</string>
+    <!-- Accessibility description of the unlock gesture area. [CHAR_LIMIT=none] -->
+    <string name="keyguard_accessibility_gesture_area">Gesture area.</string>
     <!-- Accessibility description of the unlock slide area. [CHAR_LIMIT=none] -->
     <string name="keyguard_accessibility_slide_area">Slide area.</string>
 
@@ -2990,6 +3043,12 @@
     <string name="aerr_process">Unfortunately, the process <xliff:g id="process">%1$s</xliff:g> has
         stopped.</string>
     <!-- Title of the alert when an application is not responding. -->
+    <string name="aerr_revoked_application">The application <xliff:g id="application">%1$s</xliff:g>
+        (process <xliff:g id="process">%2$s</xliff:g>) has stopped unexpectedly.\nWARNING!\nThis application has one or more of its permissions REVOKED which may cause it to malfunction. Please grant its permissions and try again.</string>
+    <!-- Text of the alert that is displayed when an application has crashed. -->
+    <string name="aerr_revoked_process">The process <xliff:g id="process">%1$s</xliff:g> has
+        stopped unexpectedly.\nWARNING!\nThis process has one or more of its permissions REVOKED which may cause it to malfunction. Please grant its permissions and try again.</string>
+    <!-- Title of the alert when an application is not responding. -->
     <string name="anr_title"></string>
     <!-- Text of the alert that is displayed when an application is not responding. -->
     <string name="anr_activity_application"><xliff:g id="application">%2$s</xliff:g> isn\'t responding.\n\nDo you want to close it?</string>
@@ -3005,6 +3064,8 @@
     <string name="report">Report</string>
     <!-- Button allowing the user to choose to wait for an application that is not responding to become responsive again. -->
     <string name="wait">Wait</string>
+    <!-- Button allowing the user reset the revoked permissions for application which has encountered an error. -->
+    <string name="reset_perms">Reset permissions</string>
     <!-- Text of the alert that is displayed when a web page is not responding. [CHAR-LIMIT=NONE] -->
     <string name="webpage_unresponsive">The page has become unresponsive.\n\nDo you want to close it?</string>
     <!-- [CHAR LIMIT=25] Title of the alert when application launches on top of another. -->
@@ -3212,6 +3273,12 @@
     <string name="date_time_set">Set</string>
     <!-- Name of the button in the date/time picker to accept the date/time change -->
     <string name="date_time_done">Done</string>
+    
+     <!-- Color picker dialog strings -->
+    <string name="color_picker">Color picker</string>
+    <string name="color_picker_hint">Press on color to apply</string>
+    <string name="color_picker_hex">Hex:</string>
+    <string name="color_picker_arrow_right" translatable="false">→</string>
 
     <!-- Security Permissions strings-->
     <!-- Text that is placed at the front of a permission name that is being added to an app [CHAR LIMIT=NONE] -->
@@ -3296,9 +3363,9 @@
     <string name="extmedia_format_button_format">Format</string>
 
     <!-- Title of notification shown when ADB is actively connected to the phone. -->
-    <string name="adb_active_notification_title">Android debugging enabled</string>
+    <string name="adb_active_notification_title">USB debugging connected</string>
     <!-- Message of notification shown when ADB is actively connected to the phone. -->
-    <string name="adb_active_notification_message">Touch to disable debugging.</string>
+    <string name="adb_active_notification_message">Touch to disable USB debugging.</string>
 
     <!-- Used to replace %s in urls retreived from the signin server with locales.  For Some        -->
     <!-- devices we don't support all the locales we ship to and need to replace the '%s' with a    -->
@@ -3812,6 +3879,12 @@
     <!-- STK setup Call -->
     <string name="SetupCallDefault">Accept call?</string>
 
+    <!-- Long-press back kill application -->
+    <string name="app_killed_message">Application killed</string>
+
+    <!-- Notification for Expanded desktop default -->
+    <string name="expanded_mode_default_set">Expanded desktop set to hide StatusBar only. Configure in Power menu settings</string>
+
     <!-- Title for a button to choose the currently selected activity
          as the default in the activity resolver. [CHAR LIMIT=25] -->
     <string name="activity_resolver_use_always">Always</string>
@@ -3846,6 +3919,21 @@
 
     <!-- "Done" button for MediaRouter chooser dialog when grouping routes. [CHAR LIMIT=NONE] -->
     <string name="media_route_chooser_grouping_done">Done</string>
+
+    <!-- Reboot -->
+    <string name="reboot">Reboot</string>
+
+    <!-- Reboot recovery option -->
+    <string name="reboot_recovery">Recovery</string>
+
+    <!-- Reboot recovery option -->
+    <string name="reboot_download">Download</string>
+
+    <!-- Reboot recovery option -->
+    <string name="reboot_bootloader">Bootloader</string>
+
+    <!-- Rebooting message -->
+    <string name="reboot_progress">Your device is rebooting</string>
 
     <!-- Content description of a MediaRouteButton for accessibility support -->
     <string name="media_route_button_content_description">Media output</string>
@@ -3890,6 +3978,10 @@
     <string name="kg_forgot_pattern_button_text">Forgot Pattern</string>
     <!-- Message shown when user enters wrong pattern -->
     <string name="kg_wrong_pattern">Wrong Pattern</string>
+    <!-- Message shown in gesture unlock after some number of unsuccessful attempts -->
+    <string name="kg_forgot_gesture_button_text">Forgot Gesture</string>
+    <!-- Message shown when user enters wrong pattern -->
+    <string name="kg_wrong_gesture">Wrong Gesture</string>
     <!-- Message shown when user enters wrong password -->
     <string name="kg_wrong_password">Wrong Password</string>
     <!-- Message shown when user enters wrong PIN -->
@@ -3898,6 +3990,8 @@
     <string name="kg_too_many_failed_attempts_countdown">Try again in <xliff:g id="number">%d</xliff:g> seconds.</string>
     <!-- Instructions for using the pattern unlock screen -->
     <string name="kg_pattern_instructions">Draw your pattern</string>
+    <!-- Instructions for using the gesture unlock screen -->
+    <string name="kg_gesture_instructions">Draw your gesture</string>
     <!-- Instructions for using the SIM PIN unlock screen -->
     <string name="kg_sim_pin_instructions">Enter SIM PIN</string>
     <!-- Instructions for using the PIN unlock screen -->
@@ -3950,6 +4044,10 @@
     </string>
     <string name="kg_too_many_failed_pattern_attempts_dialog_message">
         You have incorrectly drawn your unlock pattern <xliff:g id="number">%d</xliff:g> times.
+        \n\nTry again in <xliff:g id="number">%d</xliff:g> seconds.
+    </string>
+    <string name="kg_too_many_failed_gesture_attempts_dialog_message">
+        You have incorrectly drawn your unlock gesture <xliff:g id="number">%d</xliff:g> times.
         \n\nTry again in <xliff:g id="number">%d</xliff:g> seconds.
     </string>
     <!-- Message shown when user is almost at the limit of password attempts where the device will be wiped. -->
@@ -4013,4 +4111,152 @@
     <!-- Default name of the owner user [CHAR LIMIT=20] -->
     <string name="owner_name" msgid="3879126011135546571">Owner</string>
 
+    <!-- Vibration picker dialog title -->
+    <string name="vibration_picker_title">Select vibration</string>
+    <string name="vibration_picker_del_title">Delete vibration</string>
+
+    <!-- In WiFi notification -->
+    <string name="notify_turn_wifi_off_title">Turn Wi-Fi off</string>
+
+    <!--CyanogenMod Profiles -->
+    <!-- Names of default profiles. -->
+    <string name="profileNameDefault">Default</string>
+    <string name="profileNameWork">Work</string>
+    <string name="profileNameHome">Home</string>
+    <string name="profileNameSilent">Silent</string>
+    <string name="profileNameNight">Night</string>
+
+    <!-- Names of application groups. -->
+    <string name="profileGroupPhone">Phone</string>
+    <string name="profileGroupCalendar">Calendar</string>
+    <string name="profileGroupGmail">Gmail</string>
+    <string name="profileGroupEmail">Email</string>
+    <string name="profileGroupSMS">SMS</string>
+
+    <!-- Name of wildcard profile. -->
+    <string name="wildcardProfile">Other</string>
+
+    <!-- label for item that opens the profile choosing dialog -->
+    <string name="global_action_choose_profile">Profile</string>
+
+    <!-- In WiFi AP notification -->
+    <string name="notify_turn_wifi_ap_off_title">Turn Wi-Fi AP off</string>
+
+    <!-- Hardware Rotation lock string -->
+    <string name="toast_rotation_unlocked">Display rotation unlocked</string>
+    <string name="toast_rotation_locked">Display rotation locked</string>
+
+    <!-- Animation Strings -->
+    <string name="animation_fade">Fade</string>
+    <string name="animation_slide_right">Slide in right</string>
+    <string name="animation_slide_left">Slide in left</string>
+    <string name="animation_slide_right_no_fade">Slide in right (No fade)</string>
+    <string name="animation_slide_left_no_fade">Slide in left (No fade)</string>
+    <string name="animation_slide_up">Slide in bottom</string>
+    <string name="animation_slide_down">Slide in top</string>
+    <string name="animation_default">Default</string>
+    <string name="animation_translucent">Translucent</string>
+    <string name="animation_grow_shrink">Grow in (Top)</string>
+    <string name="animation_grow_shrink_center">Grow in (Center)</string>
+    <string name="animation_grow_shrink_bottom">Grow in (Bottom)</string>
+    <string name="animation_grow_shrink_left">Grow in (Left)</string>
+    <string name="animation_grow_shrink_right">Grow in (Right)</string>
+
+
+    <!-- Awesome Action Stuff-->
+    <string name="action_home">Home</string>
+    <string name="action_back">Back</string>
+    <string name="action_recents">Recents</string>
+    <string name="action_recents_gb">Recents (GB style)</string>
+    <string name="action_search">Search</string>
+    <string name="action_screenshot">Screenshot</string>
+    <string name="action_menu">Menu</string>
+    <string name="action_ime">Open IME Switcher</string>
+    <string name="action_kill">Kill task</string>
+    <string name="action_lastapp">Last app</string>
+    <string name="action_power">Power</string>
+    <string name="action_notifications">Notifications</string>
+    <string name="action_assist">Search (Google Now)</string>
+    <string name="action_clockoptions">Clock options</string>
+    <string name="action_voiceassist">Voice search</string>
+    <string name="action_torch">Torch</string>
+    <string name="action_silent">Ring/Silent</string>
+    <string name="action_vib">Ring/Vibrate</string>
+    <string name="action_silent_vib">Ring/Vibrate/Silent</string>
+    <string name="action_event">Event</string>
+    <string name="action_today">Today</string>
+    <string name="action_alarm">Alarm</string>
+    <string name="action_unlock">Unlock</string>
+    <string name="action_camera">Camera</string>
+    <string name="action_null">Blank</string>
+    <string name="action_widgets">Nav Widgets</string>
+    <string name="action_app_window">App Window</string>
+    <string name="action_ribbon">AOKP Ribbon</string>
+    <string name="action_app">Custom App/Shortcut</string>
+
+    <!-- Options that show upon long-pressing a key on the physical keyboard -->
+    <string name="symbol_picker_A">\u00C0\u00C1\u00C2\u00C4\u00C6\u00C3\u00C5\u0104\u0100</string>
+    <string name="symbol_picker_C">\u00C7\u0106\u010C</string>
+    <string name="symbol_picker_D">\u010E</string>
+    <string name="symbol_picker_E">\u00C8\u00C9\u00CA\u00CB\u0118\u011A\u0112</string>
+    <string name="symbol_picker_G">\u011E</string>
+    <string name="symbol_picker_L">\u0141</string>
+    <string name="symbol_picker_I">\u00CC\u00CD\u00CE\u00CF\u012A\u0130</string>
+    <string name="symbol_picker_N">\u00D1\u0143\u0147</string>
+    <string name="symbol_picker_O">\u00D8\u0152\u00D5\u00D2\u00D3\u00D4\u00D6\u014C</string>
+    <string name="symbol_picker_R">\u0158</string>
+    <string name="symbol_picker_S">\u015A\u0160\u015E</string>
+    <string name="symbol_picker_T">\u0164</string>
+    <string name="symbol_picker_U">\u00D9\u00DA\u00DB\u00DC\u016E\u016A</string>
+    <string name="symbol_picker_Y">\u00DD\u0178</string>
+    <string name="symbol_picker_Z">\u0179\u017B\u017D</string>
+    <string name="symbol_picker_a">\u00E0\u00E1\u00E2\u00E4\u00E6\u00E3\u00E5\u0105\u0101</string>
+    <string name="symbol_picker_c">\u00E7\u0107\u010D</string>
+    <string name="symbol_picker_d">\u010F</string>
+    <string name="symbol_picker_e">\u00E8\u00E9\u00EA\u00EB\u0119\u011B\u0113</string>
+    <string name="symbol_picker_g">\u011F</string>
+    <string name="symbol_picker_i">\u00EC\u00ED\u00EE\u00EF\u012B\u0131</string>
+    <string name="symbol_picker_l">\u0142</string>
+    <string name="symbol_picker_n">\u00F1\u0144\u0148</string>
+    <string name="symbol_picker_o">\u00F8\u0153\u00F5\u00F2\u00F3\u00F4\u00F6\u014D</string>
+    <string name="symbol_picker_r">\u0159</string>
+    <string name="symbol_picker_s">\u00A7\u00DF\u015B\u0161\u015F</string>
+    <string name="symbol_picker_t">\u0165</string>
+    <string name="symbol_picker_u">\u00F9\u00FA\u00FB\u00FC\u016F\u016B</string>
+    <string name="symbol_picker_y">\u00FD\u00FF</string>
+    <string name="symbol_picker_z">\u017A\u017C\u017E</string>
+    <string name="symbol_picker_sym">\u2026\u00A5\u2022\u00AE\u00A9\u00B1[]{}\u003C>`^\\|</string>
+    <string name="symbol_picker_slash">\\</string>
+    <string name="symbol_picker_1">\u00b9\u00bd\u2153\u00bc\u215b</string>
+    <string name="symbol_picker_2">\u00b2\u2154</string>
+    <string name="symbol_picker_3">\u00b3\u00be\u215c</string>
+    <string name="symbol_picker_4">\u2074</string>
+    <string name="symbol_picker_5">\u215d</string>
+    <string name="symbol_picker_7">\u215e</string>
+    <string name="symbol_picker_0">\u207f\u2205</string>
+    <string name="symbol_picker_dollar">\u00a2\u00a3\u20ac\u00a5\u20a3\u20a4\u20b1</string>
+    <string name="symbol_picker_percent">\u2030</string>
+    <string name="symbol_picker_star">\u2020\u2021</string>
+    <string name="symbol_picker_minus">\u2013\u2014</string>
+    <string name="symbol_picker_plus">\u00b1</string>
+    <string name="symbol_picker_opening_parenthesis">[{\u003C</string>
+    <string name="symbol_picker_closing_parenthesis">]}></string>
+    <string name="symbol_picker_exclamation">\u00a1</string>
+    <string name="symbol_picker_quote">\u201c\u201d\u00ab\u00bb\u02dd</string>
+    <string name="symbol_picker_question">\u00bf</string>
+    <string name="symbol_picker_comma">\u201a\u201e</string>
+    <string name="symbol_picker_equal">\u2260\u2248\u221e</string>
+    <string name="symbol_picker_lt">\u2264\u00ab\u2039</string>
+    <string name="symbol_picker_gt">\u2265\u00bb\u203a</string>
+
+    <!-- Privacy Guard -->
+    <string name="permlab_changePrivacyGuardState">enable or disable privacy guard</string>
+    <string name="permdesc_changePrivacyGuardState">Allows the application to change whether another application runs with Privacy Guard. When an application is running with Privacy Guard, it will not have access to personal data such as contacts, call logs, or messages.</string>
+    <string name="privacy_guard_notification">Privacy Guard active</string>
+    <string name="privacy_guard_notification_detail"><xliff:g id="app">%1$s</xliff:g> will not be able to access personal data</string>
+
+    <!-- Title of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permlab_interceptSmsSent">intercept outgoing SMS</string>
+    <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permdesc_interceptSmsSent">Allows the app to intercept an outgoing SMS. Malicious apps may use this to prevent outgoing SMS messages.</string>
 </resources>

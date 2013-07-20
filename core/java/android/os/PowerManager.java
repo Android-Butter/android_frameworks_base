@@ -238,6 +238,12 @@ public final class PowerManager {
     public static final int BRIGHTNESS_ON = 255;
 
     /**
+     * Brightness value for dim backlight.
+     * @hide
+     */
+    public static final int BRIGHTNESS_DIM = 20;
+
+    /**
      * Brightness value for fully off.
      * @hide
      */
@@ -855,35 +861,4 @@ public final class PowerManager {
             }
         }
     }
-
-    /**
-     * @hide
-     */
-    public void setKeyboardVisibility(boolean visible)
-    {
-        try {
-            if (mService != null) {
-                mService.setKeyboardVisibility(visible);
-            }
-        } catch (RemoteException e) {
-        }
-    }
-
-    /**
-     * sets the keyboard LED state
-     *
-     * @param on boolean state
-     * @param key 1 for caps, 2 for fn
-     *
-     * {@hide}
-     */
-    public void setKeyboardLight(boolean on, int key)
-    {
-        try {
-            mService.setKeyboardLight(on, key);
-        } catch (RemoteException e) {
-        }
-    }
-
-
 }

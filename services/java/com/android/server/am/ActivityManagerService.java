@@ -918,6 +918,12 @@ public final class ActivityManagerService extends ActivityManagerNative
         //    if (localLOGV) Slog.v(TAG, "Handler started!");
         //}
 
+        private boolean isRevokeEnabled() {
+            return android.provider.Settings.Secure.getInt(mContext.getContentResolver(),
+                    android.provider.Settings.Secure.ENABLE_PERMISSIONS_MANAGEMENT,
+                    0) == 1;
+        }
+
         public void handleMessage(Message msg) {
             switch (msg.what) {
             case SHOW_ERROR_MSG: {
@@ -944,8 +950,23 @@ public final class ActivityManagerService extends ActivityManagerNative
                         return;
                     }
                     if (mShowDialogs && !mSleeping && !mShuttingDown) {
+                        boolean hasRevoked = false;
+                        if (isRevokeEnabled()) {
+                            for (String s: proc.pkgList) {
+                                try {
+                                    String[] perms = AppGlobals.getPackageManager().getRevokedPermissions(s);
+                                    if (perms != null && perms.length > 0) {
+                                        hasRevoked = true;
+                                        break;
+                                    }
+                                }
+                                catch (RemoteException e) {
+                                    // just ignore this.
+                                }
+                            }
+                        }
                         Dialog d = new AppErrorDialog(getUiContext(),
-                                ActivityManagerService.this, res, proc);
+                                ActivityManagerService.this, res, proc, hasRevoked);
                         d.show();
                         proc.crashDialog = d;
                     } else {
@@ -2217,7 +2238,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             // the PID of the new process, or else throw a RuntimeException.
             Process.ProcessStartResult startResult = Process.start("android.app.ActivityThread",
                     app.processName, uid, uid, gids, debugFlags, mountExternal,
-                    app.info.targetSdkVersion, app.info.seinfo, null);
+                    app.info.targetSdkVersion, null, null);
 
             BatteryStatsImpl bs = app.batteryStats.getBatteryStats();
             synchronized (bs) {
@@ -3266,6 +3287,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             final File tracesFile = new File(tracesPath);
             final File tracesDir = tracesFile.getParentFile();
             final File tracesTmp = new File(tracesDir, "__tmp__");
+            FileOutputStream fos = null;
             try {
                 if (!tracesDir.exists()) {
                     tracesFile.mkdirs();
@@ -3287,16 +3309,23 @@ public final class ActivityManagerService extends ActivityManagerNative
                 TimeUtils.formatDuration(SystemClock.uptimeMillis()-startTime, sb);
                 sb.append(" since ");
                 sb.append(msg);
-                FileOutputStream fos = new FileOutputStream(tracesFile);
+                fos = new FileOutputStream(tracesFile);
                 fos.write(sb.toString().getBytes());
                 if (app == null) {
                     fos.write("\n*** No application process!".getBytes());
                 }
-                fos.close();
-                FileUtils.setPermissions(tracesFile.getPath(), 0666, -1, -1); // -rw-rw-rw-
             } catch (IOException e) {
                 Slog.w(TAG, "Unable to prepare slow app traces file: " + tracesPath, e);
                 return;
+            } finally {
+                try {
+                    if (fos != null) {
+                        fos.close();
+                    }
+                    FileUtils.setPermissions(tracesFile.getPath(), 0666, -1, -1); // -rw-rw-rw-
+                } catch (IOException ignored) {
+                    // let it go
+                }
             }
 
             if (app != null) {
@@ -4476,7 +4505,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 mUiContext = null;
             }
         });
-        
+
         synchronized (this) {
             // Ensure that any processes we had put on hold are now started
             // up.
@@ -6320,6 +6349,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     // it runs in the process of the default user.  Get rid of it.
                     providers.remove(i);
                     N--;
+                    i--;
                     continue;
                 }
 
@@ -6535,7 +6565,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     // pending on the process even though we managed to update its
                     // adj level.  Not sure what to do about this, but at least
                     // the race is now smaller.
-                    if (!success) {
+                    if (!success || !Process.isAlive(cpr.proc.pid)) {
                         // Uh oh...  it looks like the provider's process
                         // has been killed on us.  We need to wait for a new
                         // process to be started, and make sure its death
@@ -6544,7 +6574,9 @@ public final class ActivityManagerService extends ActivityManagerNative
                                 "Existing provider " + cpr.name.flattenToShortString()
                                 + " is crashing; detaching " + r);
                         boolean lastRef = decProviderCountLocked(conn, cpr, token, stable);
-                        appDiedLocked(cpr.proc, cpr.proc.pid, cpr.proc.thread);
+                        if (!success) {
+                            appDiedLocked(cpr.proc, cpr.proc.pid, cpr.proc.thread);
+                        }
                         if (!lastRef) {
                             // This wasn't the last ref our process had on
                             // the provider...  we have now been killed, bail.
@@ -8760,6 +8792,15 @@ public final class ActivityManagerService extends ActivityManagerNative
             }
             if (res == AppErrorDialog.FORCE_QUIT_AND_REPORT) {
                 appErrorIntent = createAppErrorIntentLocked(r, timeMillis, crashInfo);
+            } else if (res == AppErrorDialog.FORCE_QUIT_AND_RESET_PERMS) {
+                for (String pkg: r.pkgList) {
+                    long oldId = Binder.clearCallingIdentity();
+                    try {
+                        AppGlobals.getPackageManager().setRevokedPermissions(pkg, new String[0]);
+                    } catch (RemoteException e) {
+                    }
+                    Binder.restoreCallingIdentity(oldId);
+                }
             }
         }
 
@@ -9276,7 +9317,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 TaskRecord tr = mRecentTasks.get(i);
                 if (dumpPackage != null) {
                     if (tr.realActivity == null ||
-                            !dumpPackage.equals(tr.realActivity.getPackageName())) {
+                            !dumpPackage.equals(tr.realActivity)) {
                         continue;
                     }
                 }

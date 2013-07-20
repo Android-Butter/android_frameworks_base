@@ -83,6 +83,7 @@ import android.text.TextUtils;
 import android.text.style.SuggestionSpan;
 import android.util.AtomicFile;
 import android.util.EventLog;
+import android.util.ExtendedPropertiesUtils;
 import android.util.LruCache;
 import android.util.Pair;
 import android.util.PrintWriterPrinter;
@@ -401,7 +402,7 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
             resolver.registerContentObserver(Settings.Secure.getUriFor(
                     Settings.Secure.SELECTED_INPUT_METHOD_SUBTYPE), false, this);
             resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_IME_SWITCHER),
+                    Settings.System.SHOW_STATUSBAR_IME_SWITCHER),
                     false, new ContentObserver(mHandler) {
                         public void onChange(boolean selfChange) {
                             updateFromSettingsLocked();
@@ -1507,7 +1508,9 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
                 if (mStatusBar != null) {
                     mStatusBar.setImeWindowStatus(token, vis, backDisposition);
                 }
-                final boolean iconVisibility = (vis & InputMethodService.IME_ACTIVE) != 0;
+                final boolean iconVisibility = ((vis & (InputMethodService.IME_ACTIVE)) != 0)
+                        && (mWindowManagerService.isHardKeyboardAvailable()
+                                || (vis & (InputMethodService.IME_VISIBLE)) != 0);
                 final InputMethodInfo imi = mMethodMap.get(mCurMethodId);
                 if (imi != null && iconVisibility && needsToShowImeSwitchOngoingNotification()) {
                     // Used to load label
@@ -1623,14 +1626,9 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
             mCurMethodId = null;
             unbindCurrentMethodLocked(true, false);
         }
-        // code to disable the CM Phone IME switcher with config_show_cmIMESwitcher set = false
-        try {
-            mShowOngoingImeSwitcherForPhones = Settings.System.getInt(mContext.getContentResolver(),
-            Settings.System.STATUS_BAR_IME_SWITCHER) == 1;
-        } catch (SettingNotFoundException e) {
-            mShowOngoingImeSwitcherForPhones = mRes.getBoolean(
-            com.android.internal.R.bool.config_show_cmIMESwitcher);
-        }
+
+        mShowOngoingImeSwitcherForPhones = Settings.System.getBoolean(mContext.getContentResolver(),
+                Settings.System.SHOW_STATUSBAR_IME_SWITCHER, true);
     }
 
     /* package */ void setInputMethodLocked(String id, int subtypeId) {

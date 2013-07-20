@@ -234,6 +234,10 @@ final class DisplayPowerController {
     // a stylish electron beam animation instead.
     private boolean mElectronBeamFadesConfig;
 
+    // Slim settings - override config for ElectronBeam
+    private boolean mElectronBeamOffEnabled;
+    private int mElectronBeamMode;
+
     // The pending power request.
     // Initially null until the first call to requestPowerState.
     // Guarded by mLock.
@@ -391,7 +395,6 @@ final class DisplayPowerController {
 
         mUseSoftwareAutoBrightnessConfig = resources.getBoolean(
                 com.android.internal.R.bool.config_automatic_brightness_available);
-
         if (mUseSoftwareAutoBrightnessConfig) {
             final ContentResolver cr = mContext.getContentResolver();
             final ContentObserver observer = new ContentObserver(mHandler) {
@@ -490,7 +493,6 @@ final class DisplayPowerController {
                 return null;
             }
         }
-
         return values;
     }
 
@@ -604,7 +606,8 @@ final class DisplayPowerController {
 
     private void initialize() {
         mPowerState = new DisplayPowerState(
-                new ElectronBeam(mDisplayManager), mDisplayBlanker,
+                new ElectronBeam(mDisplayManager, mElectronBeamMode),
+                mDisplayBlanker,
                 mLights.getLight(LightsService.LIGHT_ID_BACKLIGHT));
 
         mElectronBeamOnAnimator = ObjectAnimator.ofFloat(
@@ -643,7 +646,6 @@ final class DisplayPowerController {
         boolean mustInitialize = false;
         boolean updateAutoBrightness = mTwilightChanged || mAutoBrightnessSettingsChanged;
         boolean wasDim = false;
-
         mTwilightChanged = false;
         mAutoBrightnessSettingsChanged = false;
 
@@ -673,6 +675,15 @@ final class DisplayPowerController {
             }
 
             mustNotify = !mDisplayReadyLocked;
+        }
+
+        // update crt settings here
+        mElectronBeamOffEnabled = mPowerRequest.electronBeamOffEnabled;
+
+        // update crt mode settings and force initialize if value changed
+        if (mElectronBeamMode != mPowerRequest.electronBeamMode) {
+            mElectronBeamMode = mPowerRequest.electronBeamMode;
+            mustInitialize = true;
         }
 
         // Initialize things the first time the power state is changed.
@@ -794,11 +805,10 @@ final class DisplayPowerController {
                         if (mPowerState.getElectronBeamLevel() == 0.0f) {
                             setScreenOn(false);
                         } else if (mPowerState.prepareElectronBeam(
-                                mElectronBeamFadesConfig ?
+                                !mElectronBeamOffEnabled ?
                                         ElectronBeam.MODE_FADE :
-                                        ElectronBeam.MODE_COOL_DOWN)
-                                && mPowerState.isScreenOn()
-                                && useScreenOffAnimation()) {
+                                                ElectronBeam.MODE_COOL_DOWN)
+                                && mPowerState.isScreenOn()) {
                             mElectronBeamOffAnimator.start();
                         } else {
                             mElectronBeamOffAnimator.end();
@@ -856,7 +866,6 @@ final class DisplayPowerController {
                 mNotifier.onScreenOn();
             } else {
                 mLights.getLight(LightsService.LIGHT_ID_BUTTONS).setBrightness(0);
-                mLights.getLight(LightsService.LIGHT_ID_KEYBOARD).setBrightness(0);
                 mNotifier.onScreenOff();
             }
         }
@@ -1455,9 +1464,4 @@ final class DisplayPowerController {
             updatePowerState();
         }
     };
-
-    private boolean useScreenOffAnimation() {
-        return Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.SCREEN_OFF_ANIMATION, 1) == 1;
-    }
 }
