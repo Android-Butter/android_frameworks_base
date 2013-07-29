@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2006-2007 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* Copyright (C) 2006-2007 The Android Open Source Project
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 package com.android.server.am;
 
@@ -41,9 +41,9 @@ import java.io.PrintWriter;
 import java.util.List;
 
 /**
- * All information we are collecting about things that can happen that impact
- * battery life.
- */
+* All information we are collecting about things that can happen that impact
+* battery life.
+*/
 public final class BatteryStatsService extends IBatteryStats.Stub {
     static IBatteryStats sService;
     
@@ -82,10 +82,10 @@ public final class BatteryStatsService extends IBatteryStats.Stub {
     }
     
     /**
-     * @return the current statistics object, which may be modified
-     * to reflect events that affect battery usage.  You must lock the
-     * stats object before doing anything with it.
-     */
+* @return the current statistics object, which may be modified
+* to reflect events that affect battery usage. You must lock the
+* stats object before doing anything with it.
+*/
     public BatteryStatsImpl getActiveStatistics() {
         return mStats;
     }
@@ -330,6 +330,13 @@ public final class BatteryStatsService extends IBatteryStats.Stub {
         synchronized (mStats) {
             mBluetoothPendingStats = false;
             mStats.noteBluetoothOffLocked();
+            mStats.setBtHeadset(null);
+        }
+
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        if (adapter != null && mBluetoothHeadset != null) {
+            adapter.closeProfileProxy(BluetoothProfile.HEADSET, mBluetoothHeadset);
+            mBluetoothHeadset = null;
         }
     }
     
@@ -456,11 +463,11 @@ public final class BatteryStatsService extends IBatteryStats.Stub {
     
     private void dumpHelp(PrintWriter pw) {
         pw.println("Battery stats (batteryinfo) dump options:");
-        pw.println("  [--checkin] [--reset] [--write] [-h]");
-        pw.println("  --checkin: format output for a checkin report.");
-        pw.println("  --reset: reset the stats, clearing all current data.");
-        pw.println("  --write: force write current collected stats to disk.");
-        pw.println("  -h: print this help text.");
+        pw.println(" [--checkin] [--reset] [--write] [-h]");
+        pw.println(" --checkin: format output for a checkin report.");
+        pw.println(" --reset: reset the stats, clearing all current data.");
+        pw.println(" --write: force write current collected stats to disk.");
+        pw.println(" -h: print this help text.");
     }
 
     @Override
